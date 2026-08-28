@@ -10,6 +10,11 @@ async def register() -> dict[str, str]:
 async def login() -> dict[str, str]:
     return {"status": "ok"}
 
+@router.post("/merge")
+async def logout() -> dict[str, str]:
+    print("Merge")
+    return {"status": "ok"}
+
 @router.get("/{id}")
 async def logout(id: int) -> dict[str, str]:
     print("Id get")
@@ -22,9 +27,4 @@ async def logout(id: int) -> dict[str, str]:
 
 @router.delete("/{id}")
 async def logout(id: int) -> dict[str, str]:
-    return {"status": "ok"}
-
-@router.post("/merge")
-async def logout() -> dict[str, str]:
-    print("Merge")
     return {"status": "ok"}
