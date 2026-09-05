@@ -26,7 +26,7 @@ class UserBO(BaseModel):
 
 
 async def introspect(token: str) -> UserBO:
-    url = "http://localhostL:80/instrospect"
+    url = "http://localhost:80/instrospect"
     headers = {"auth": token, "content-type": "application/json"}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
@@ -58,8 +58,8 @@ async def files_get(auth: str = Header()) -> list[FilesGet]:
     user = await introspect(auth)
     user_files = []
 
-    for file in files_db:
-        if user.email != file.email:
+    for file in files_db.values():
+        if user.email == file.email:
             user_files.append(file)
 
     return user_files
@@ -113,8 +113,8 @@ async def files_merge_post(auth: str = Header(), body: MergePost = Body()) -> di
 
     merger.close()
 
-    global files_counter
-    files_counter += 1
+    global file_counter
+    file_counter += 1
     current_file = FilesBO(title=f"{file_1_name}_{file_2_name}",
                            author=f"{current_file_1.author}_{current_file_2.author}", id=file_counter, email=user.email,
                            path=file_name_result)
