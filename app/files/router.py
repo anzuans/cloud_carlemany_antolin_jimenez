@@ -26,7 +26,7 @@ class UserBO(BaseModel):
 
 
 async def introspect(token: str) -> UserBO:
-    url = "http://localhost:80/instrospect"
+    url = "http://localhost:80/authentication/introspect"
     headers = {"auth": token, "content-type": "application/json"}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
@@ -140,7 +140,7 @@ async def files_id_get(id: int, auth: str = Header()) -> FilesIdGet:
                       email=current_file.email)
 
 
-@router.post("/{file_id}")
+@router.post("/{id}")
 async def files_id_post(id: int, auth: str = Header(), file_content: UploadFile = File()) -> dict[str, int]:
     """Update a file by ID."""
     user = await introspect(auth)
@@ -157,7 +157,7 @@ async def files_id_post(id: int, auth: str = Header(), file_content: UploadFile 
     return {"id": id}
 
 
-@router.delete("/{file_id}")
+@router.delete("/{id}")
 async def files_id_delete(id: int, auth: str = Header()) -> dict[str, int]:
     """Delete a file by ID."""
     user = await introspect(auth)
