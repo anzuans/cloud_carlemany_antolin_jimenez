@@ -26,7 +26,7 @@ class UserBO(BaseModel):
 
 
 async def introspect(token: str) -> UserBO:
-    url = "http://localhostL:80/instrospect"
+    url = "http://localhost:80/authentication/introspect"
     headers = {"auth": token, "content-type": "application/json"}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
@@ -58,8 +58,8 @@ async def files_get(auth: str = Header()) -> list[FilesGet]:
     user = await introspect(auth)
     user_files = []
 
-    for file in files_db:
-        if user.email != file.email:
+    for file in files_db.values():
+        if user.email == file.email:
             user_files.append(file)
 
     return user_files
@@ -113,8 +113,8 @@ async def files_merge_post(auth: str = Header(), body: MergePost = Body()) -> di
 
     merger.close()
 
-    global files_counter
-    files_counter += 1
+    global file_counter
+    file_counter += 1
     current_file = FilesBO(title=f"{file_1_name}_{file_2_name}",
                            author=f"{current_file_1.author}_{current_file_2.author}", id=file_counter, email=user.email,
                            path=file_name_result)
@@ -140,7 +140,7 @@ async def files_id_get(id: int, auth: str = Header()) -> FilesIdGet:
                       email=current_file.email)
 
 
-@router.post("/{file_id}")
+@router.post("/{id}")
 async def files_id_post(id: int, auth: str = Header(), file_content: UploadFile = File()) -> dict[str, int]:
     """Update a file by ID."""
     user = await introspect(auth)
@@ -157,7 +157,7 @@ async def files_id_post(id: int, auth: str = Header(), file_content: UploadFile 
     return {"id": id}
 
 
-@router.delete("/{file_id}")
+@router.delete("/{id}")
 async def files_id_delete(id: int, auth: str = Header()) -> dict[str, int]:
     """Delete a file by ID."""
     user = await introspect(auth)

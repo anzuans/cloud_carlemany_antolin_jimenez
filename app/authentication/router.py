@@ -59,7 +59,7 @@ async def login(input: LoginInput = Body()) -> dict[str, str]:
 
     user_bo = user_database[input.email]
 
-    if user_bo.password != hashed_password:
+    if user_bo.hashed_password != hashed_password:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     current_token = str(uuid.uuid4())
