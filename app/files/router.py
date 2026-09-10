@@ -1,9 +1,10 @@
 """Routes for file operations."""
+
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Header, Body, HTTPException, UploadFile, File
 import aiohttp
+from fastapi import APIRouter, Body, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 from pypdf import PdfMerger
 
@@ -104,8 +105,7 @@ async def files_merge_post(auth: str = Header(), body: MergePost = Body()) -> di
 
     merger = PdfMerger()
 
-    pdfs = [current_file_1.path,
-            current_file_2.path]
+    pdfs = [current_file_1.path, current_file_2.path]
     for pdf in pdfs:
         merger.append(pdf)
 
@@ -115,9 +115,13 @@ async def files_merge_post(auth: str = Header(), body: MergePost = Body()) -> di
 
     global file_counter
     file_counter += 1
-    current_file = FilesBO(title=f"{file_1_name}_{file_2_name}",
-                           author=f"{current_file_1.author}_{current_file_2.author}", id=file_counter, email=user.email,
-                           path=file_name_result)
+    current_file = FilesBO(
+        title=f"{file_1_name}_{file_2_name}",
+        author=f"{current_file_1.author}_{current_file_2.author}",
+        id=file_counter,
+        email=user.email,
+        path=file_name_result,
+    )
     files_db[current_file.id] = current_file
 
     return {"id": current_file.id}
@@ -136,12 +140,19 @@ async def files_id_get(id: int, auth: str = Header()) -> FilesIdGet:
     """Get a file by ID."""
     user = await introspect(auth)
     current_file = chek_ownership(user, id)
-    return FilesIdGet(id=id, title=current_file.title, author=current_file.author, path=current_file.path,
-                      email=current_file.email)
+    return FilesIdGet(
+        id=id,
+        title=current_file.title,
+        author=current_file.author,
+        path=current_file.path,
+        email=current_file.email,
+    )
 
 
 @router.post("/{id}")
-async def files_id_post(id: int, auth: str = Header(), file_content: UploadFile = File()) -> dict[str, int]:
+async def files_id_post(
+    id: int, auth: str = Header(), file_content: UploadFile = File()
+) -> dict[str, int]:
     """Update a file by ID."""
     user = await introspect(auth)
     db_file = chek_ownership(user, id)

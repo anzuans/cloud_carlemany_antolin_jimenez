@@ -2,3 +2,5 @@
 /CloudComputing.iml
 .env
 /files/*.pdf
+/.coverage
+/tests/test-results/junit.xml
