@@ -36,7 +36,7 @@ async def register(input: RegisterInput = Body()) -> dict[str, str]:
     register_controller = RegisterControllers.carlemany()
 
     try:
-        register_controller(email=input.email, password=input.password, address=input.address)
+        await register_controller(email=input.email, password=input.password, address=input.address)
     except EmailAlreadyExistsException:
         raise HTTPException(status_code=400, detail="Email already registered") from None
 
@@ -54,7 +54,7 @@ async def login(input: LoginInput = Body()) -> dict[str, str]:
     login_controller = LoginControllers.carlemany()
 
     try:
-        token = login_controller(email=input.email, password=input.password)
+        token = await login_controller(email=input.email, password=input.password)
     except InvalidCredentialsException:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 
@@ -85,7 +85,7 @@ async def introspect(auth: str = Header()) -> RegisterOutput:
     introspect_controller = IntrospectControllers.carlemany()
 
     try:
-        user_bo = introspect_controller(token=auth)
+        user_bo = await introspect_controller(token=auth)
     except InvalidTokenException:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 

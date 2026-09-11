@@ -7,6 +7,9 @@ from app.authentication.domain.controllers.register_controller import RegisterCo
 
 
 class RegisterControllers(containers.DeclarativeContainer):
-    v1 = providers.Singleton(RegisterController(persistence_service=UserBOPersistences.carlemany()))
+    v1 = providers.Singleton(
+        RegisterController,
+        persistence_service=UserBOPersistences.carlemany()
+    )
 
     carlemany = v1

@@ -1,4 +1,7 @@
 from app.authentication.domain.bos.user_bo import UserBO
+from app.authentication.domain.exceptions.EmailDoesNotExistsException import (
+    EmailDoesNotExistsException,
+)
 from app.authentication.domain.exceptions.InvalidTokenException import InvalidTokenException
 from app.authentication.domain.interface.token_persistence_interface import (
     TokenPersistenceInterface,
@@ -17,11 +20,12 @@ class IntrospectController:
         self.user_persistence_service = user_persistence_service
         self.token_persistence_service = token_persistence_service
 
-    def __call__(self, token: str) -> UserBO:
+    async def __call__(self, token: str) -> UserBO:
         email = self.token_persistence_service.get_email(token)
-        user_bo = self.user_persistence_service.get_user(email) if email else None
-
-        if user_bo is None:
+        if email is None:
             raise InvalidTokenException()
 
-        return user_bo
+        try:
+            return await self.user_persistence_service.get_user(email)
+        except EmailDoesNotExistsException:
+            raise InvalidTokenException() from None

@@ -1,5 +1,8 @@
 import uuid
 
+from app.authentication.domain.exceptions.EmailDoesNotExistsException import (
+    EmailDoesNotExistsException,
+)
 from app.authentication.domain.exceptions.InvalidCredentialsException import (
     InvalidCredentialsException,
 )
@@ -22,11 +25,15 @@ class LoginController:
         self.user_persistence_service = user_persistence_service
         self.token_persistence_service = token_persistence_service
 
-    def __call__(self, email: str, password: str) -> str:
-        user_bo = self.user_persistence_service.get_user(email)
+    async def __call__(self, email: str, password: str) -> str:
+        try:
+            user_bo = await self.user_persistence_service.get_user(email)
+        except EmailDoesNotExistsException:
+            raise InvalidCredentialsException() from None
+
         hashed_password = self.generate_hash_service(email, password)
 
-        if user_bo is None or user_bo.hashed_password != hashed_password:
+        if user_bo.hashed_password != hashed_password:
             raise InvalidCredentialsException()
 
         token = str(uuid.uuid4())

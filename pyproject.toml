@@ -15,6 +15,7 @@ dependencies = [
     "pypdf==4.2.0",
     "python-multipart==0.0.9",
     "requests==2.32.3",
+    "tortoise>=0.1.1",
     "tortoise-orm==0.19.3",
 ]
 

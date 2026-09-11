@@ -12,7 +12,7 @@ class RegisterController:
         self.generate_hash_service = GenerateHashService()
         self.persistence_service = persistence_service
 
-    def __call__(self, email: str, password: str, address: Optional[str] = None):
+    async def __call__(self, email: str, password: str, address: Optional[str] = None) -> None:
         hashed_password = self.generate_hash_service(email, password)
         user_bo = UserBO(email=email, hashed_password=hashed_password, address=address)
-        self.persistence_service.store_user(user_bo)
+        await self.persistence_service.store_user(user_bo)
