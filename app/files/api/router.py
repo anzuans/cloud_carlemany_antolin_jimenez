@@ -1,0 +1,210 @@
+"""Routes for file operations."""
+
+from typing import Optional
+
+import aiohttp
+from fastapi import APIRouter, Body, Header, HTTPException
+from pydantic import BaseModel
+
+from app.files.dependency_injection.domain.create_file_controller import (
+    CreateFileControllers,
+)
+from app.files.dependency_injection.domain.delete_file_controller import (
+    DeleteFileControllers,
+)
+from app.files.dependency_injection.domain.get_file_controller import (
+    GetFileControllers,
+)
+from app.files.dependency_injection.domain.list_files_controller import (
+    ListFilesControllers,
+)
+from app.files.dependency_injection.domain.merge_files_controller import (
+    MergeFilesControllers,
+)
+from app.files.dependency_injection.domain.update_file_content_controller import (
+    UpdateFileContentControllers,
+)
+from app.files.domain.exceptions.FileNotFoundException import FileNotFoundException
+from app.files.domain.exceptions.UnauthorizedFileAccessException import (
+    UnauthorizedFileAccessException,
+)
+
+router = APIRouter(prefix="/files", tags=["files"])
+
+
+# ============================================================================
+# Helper function to get user_id from authentication service
+# ============================================================================
+async def get_user_from_token(token: str) -> int:
+    """Verify token and get user_id from authentication service."""
+    url = "http://localhost:80/authentication/introspect"
+    headers = {"auth": token, "content-type": "application/json"}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            if response.status != 200:
+                raise HTTPException(status_code=403, detail="Forbidden")
+            data = await response.json()
+            if "user_id" not in data:
+                raise HTTPException(status_code=403, detail="Forbidden")
+            return data["user_id"]
+
+
+# ============================================================================
+# GET /files - List all files for the authenticated user
+# ============================================================================
+class FileResponse(BaseModel):
+    """Response model for file."""
+
+    id: int
+    title: str
+    description: Optional[str] = None
+    user_id: int
+
+
+@router.get("")
+async def list_files(auth: str = Header()) -> list[FileResponse]:
+    """List all files owned by the authenticated user."""
+    user_id = await get_user_from_token(auth)
+    list_controller = ListFilesControllers.carlemany()
+    files_bo = await list_controller(user_id=user_id)
+    return [
+        FileResponse(id=f.id, title=f.title, description=f.description, user_id=f.user_id)
+        for f in files_bo
+    ]
+
+
+# ============================================================================
+# POST /files - Create a new file (metadata only)
+# ============================================================================
+class CreateFileRequest(BaseModel):
+    """Request model for creating a file."""
+
+    title: str
+    description: Optional[str] = None
+
+
+class CreateFileResponse(BaseModel):
+    """Response model for creating a file."""
+
+    id: int
+
+
+@router.post("")
+async def create_file(auth: str = Header(), body: CreateFileRequest = Body()) -> CreateFileResponse:
+    """Create a new file (metadata only)."""
+    user_id = await get_user_from_token(auth)
+    create_controller = CreateFileControllers.carlemany()
+    file_bo = await create_controller(
+        title=body.title,
+        description=body.description or "",
+        user_id=user_id,
+    )
+    return CreateFileResponse(id=file_bo.id)
+
+
+# ============================================================================
+# GET /files/{file_id} - Get file by ID
+# ============================================================================
+class GetFileResponse(BaseModel):
+    """Response model for getting a file."""
+
+    id: int
+    title: str
+    description: Optional[str] = None
+    content: Optional[str] = None
+    user_id: int
+
+
+@router.get("/{file_id}")
+async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
+    """Get a specific file by ID."""
+    user_id = await get_user_from_token(auth)
+    get_controller = GetFileControllers.carlemany()
+    try:
+        file_bo = await get_controller(file_id=file_id, user_id=user_id)
+    except FileNotFoundException:
+        raise HTTPException(status_code=404, detail="File not found") from None
+    except UnauthorizedFileAccessException:
+        raise HTTPException(status_code=403, detail="Forbidden") from None
+
+    return GetFileResponse(
+        id=file_bo.id,
+        title=file_bo.title,
+        description=file_bo.description,
+        content=file_bo.content,
+        user_id=file_bo.user_id,
+    )
+
+
+# ============================================================================
+# POST /files/{file_id} - Upload file content
+# ============================================================================
+class UpdateFileContentRequest(BaseModel):
+    """Request model for updating file content."""
+
+    content: str
+
+
+@router.post("/{file_id}")
+async def update_file_content(
+    file_id: int, auth: str = Header(), body: UpdateFileContentRequest = Body()
+) -> dict[str, str]:
+    """Upload/update content for a specific file."""
+    user_id = await get_user_from_token(auth)
+    update_controller = UpdateFileContentControllers.carlemany()
+    try:
+        await update_controller(file_id=file_id, user_id=user_id, content=body.content)
+    except FileNotFoundException:
+        raise HTTPException(status_code=404, detail="File not found") from None
+    except UnauthorizedFileAccessException:
+        raise HTTPException(status_code=403, detail="Forbidden") from None
+
+    return {"status": "ok"}
+
+
+# ============================================================================
+# DELETE /files/{file_id} - Delete a file
+# ============================================================================
+@router.delete("/{file_id}")
+async def delete_file(file_id: int, auth: str = Header()) -> dict[str, str]:
+    """Delete a specific file."""
+    user_id = await get_user_from_token(auth)
+    delete_controller = DeleteFileControllers.carlemany()
+    try:
+        await delete_controller(file_id=file_id, user_id=user_id)
+    except FileNotFoundException:
+        raise HTTPException(status_code=404, detail="File not found") from None
+    except UnauthorizedFileAccessException:
+        raise HTTPException(status_code=403, detail="Forbidden") from None
+
+    return {"status": "ok"}
+
+
+# ============================================================================
+# POST /files/merge - Merge multiple PDF files
+# ============================================================================
+class MergeFilesRequest(BaseModel):
+    """Request model for merging files."""
+
+    file_ids: list[int]
+
+
+class MergeFilesResponse(BaseModel):
+    """Response model for merging files."""
+
+    id: int
+
+
+@router.post("/merge")
+async def merge_files(auth: str = Header(), body: MergeFilesRequest = Body()) -> MergeFilesResponse:
+    """Merge multiple PDF files."""
+    user_id = await get_user_from_token(auth)
+    merge_controller = MergeFilesControllers.carlemany()
+    try:
+        merged_file_id = await merge_controller(file_ids=body.file_ids, user_id=user_id)
+    except FileNotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e)) from None
+    except UnauthorizedFileAccessException:
+        raise HTTPException(status_code=403, detail="Forbidden") from None
+
+    return MergeFilesResponse(id=merged_file_id)

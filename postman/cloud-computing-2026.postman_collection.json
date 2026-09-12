@@ -1,0 +1,667 @@
+{
+  "info": {
+    "_postman_id": "c4f8e2b1-9a1d-4f6c-9b3e-7e2d5a8f0b1c",
+    "name": "Cloud Computing 2026 - HTTP API with FastAPI",
+    "description": "Collection of tests for Activity 2: HTTP API with FastAPI (storage file system).\n\nPrerequisites:\n- Start the server: `uvicorn app.main:app --host 0.0.0.0 --port 8080 --log-level debug`\n- Update the collection variable `base_url` if the server runs elsewhere.\n- The requests run in order and share the `token` / `file_id` collection variables (set automatically by the Login and Create file requests).\n- The 'files/{id} - upload content' request needs a PDF file selected in Postman before sending.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "register - create user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - user created\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Body returns status ok\", function () { pm.expect(pm.response.json().status).to.eql(\"ok\"); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{user_email}}\",\n    \"password\": \"{{password}}\",\n    \"address\": \"Andorra la Vella\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/authentication/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "register"
+              ]
+            },
+            "description": "POST /authentication/register - creates a new user. Expects 200 on success."
+          },
+          "response": []
+        },
+        {
+          "name": "register - duplicate user (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 409 - user already exists\", function () { pm.response.to.have.status(409); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{user_email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/authentication/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "register"
+              ]
+            },
+            "description": "POST /authentication/register with an email that already exists. The task specifies 409 when the user already exists."
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - login success\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Token is returned and stored\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.token).to.be.a(\"string\");",
+                  "    pm.expect(body.token).to.not.eql(\"\");",
+                  "    pm.collectionVariables.set(\"token\", body.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{user_email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/authentication/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "login"
+              ]
+            },
+            "description": "POST /authentication/login - creates a new session and returns a connection token. Stores the token in the `token` collection variable so following requests can use it through the `Auth` header."
+          },
+          "response": []
+        },
+        {
+          "name": "introspect - valid token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - valid token\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Returns the logged user info\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.email).to.eql(pm.collectionVariables.get(\"user_email\"));",
+                  "    pm.expect(body.address).to.eql(\"Andorra la Vella\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authentication/introspect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "introspect"
+              ]
+            },
+            "description": "GET /authentication/introspect - verifies the session token and returns the user information."
+          },
+          "response": []
+        },
+        {
+          "name": "introspect - invalid token (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 403 - invalid token rejected\", function () { pm.response.to.have.status(403); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{invalid_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authentication/introspect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "introspect"
+              ]
+            },
+            "description": "GET /authentication/introspect with a wrong token. Must be rejected with 403."
+          },
+          "response": []
+        },
+        {
+          "name": "logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - logout success\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authentication/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "logout"
+              ]
+            },
+            "description": "POST /authentication/logout - closes the session associated to the token."
+          },
+          "response": []
+        },
+        {
+          "name": "introspect - token after logout (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 403 - token invalidated by logout\", function () { pm.response.to.have.status(403); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authentication/introspect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "introspect"
+              ]
+            },
+            "description": "GET /authentication/introspect using a token that was closed by logout. Proves the session was really invalidated (403)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "login (re-authenticate)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - login success\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Token is refreshed\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.token).to.be.a(\"string\");",
+                  "    pm.collectionVariables.set(\"token\", body.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{user_email}}\",\n    \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/authentication/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "login"
+              ]
+            },
+            "description": "Re-authenticates and refreshes the `token` collection variable after the logout test, so the Files folder runs with a valid token."
+          },
+          "response": []
+        },
+        {
+          "name": "files - create file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - file created\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"File id is returned and stored\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a(\"number\");",
+                  "    pm.collectionVariables.set(\"file_id\", body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Cloud report\",\n    \"author\": \"Team ALM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/files",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files"
+              ]
+            },
+            "description": "POST /files - creates a new file owned by the authenticated user and returns its id. Stores the id in the `file_id` collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "files - list files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - files listed\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Created file appears in the list\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.be.an(\"array\");",
+                  "    const created = body.find(f => f.id === Number(pm.collectionVariables.get(\"file_id\")));",
+                  "    pm.expect(created, \"created file present\").to.exist;",
+                  "    pm.expect(created.title).to.eql(\"Cloud report\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/files",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files"
+              ]
+            },
+            "description": "GET /files - returns all the files owned by the user of the token."
+          },
+          "response": []
+        },
+        {
+          "name": "files/{id} - get file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - file fetched\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Returns the expected file\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.eql(Number(pm.collectionVariables.get(\"file_id\")));",
+                  "    pm.expect(body.email).to.eql(pm.collectionVariables.get(\"user_email\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/files/{{file_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files",
+                "{{file_id}}"
+              ]
+            },
+            "description": "GET /files/{id} - returns the information of the file with the given id."
+          },
+          "response": []
+        },
+        {
+          "name": "files/{id} - upload content",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - content uploaded\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file_content",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/files/{{file_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files",
+                "{{file_id}}"
+              ]
+            },
+            "description": "POST /files/{id} - uploads the content of a PDF for the given file id. Select a PDF file in the 'file_content' form field of the request body before sending."
+          },
+          "response": []
+        },
+        {
+          "name": "files/{id} - delete file",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200 - file deleted\", function () { pm.response.to.have.status(200); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/files/{{file_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files",
+                "{{file_id}}"
+              ]
+            },
+            "description": "DELETE /files/{id} - deletes the file with the given id."
+          },
+          "response": []
+        },
+        {
+          "name": "files/{id} - get deleted file (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 404 - file not found\", function () { pm.response.to.have.status(404); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/files/{{file_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files",
+                "{{file_id}}"
+              ]
+            },
+            "description": "GET /files/{id} after deleting the file. Must return 404."
+          },
+          "response": []
+        },
+        {
+          "name": "files - unauthorized (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 401 - unauthorized\", function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Auth",
+                "value": "{{invalid_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/files",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "files"
+              ]
+            },
+            "description": "GET /files with an invalid session token. Must return 401."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "user_email",
+      "value": "testuser@example.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invalid_token",
+      "value": "invalid-token-for-testing",
+      "type": "string"
+    },
+    {
+      "key": "file_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

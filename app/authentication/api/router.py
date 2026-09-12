@@ -75,6 +75,7 @@ async def logout(auth: str = Header()) -> dict[str, str]:
 
 
 class RegisterOutput(BaseModel):
+    user_id: int
     email: str
     address: Optional[str] = None
 
@@ -89,4 +90,4 @@ async def introspect(auth: str = Header()) -> RegisterOutput:
     except InvalidTokenException:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 
-    return RegisterOutput(email=user_bo.email, address=user_bo.address)
+    return RegisterOutput(user_id=user_bo.id, email=user_bo.email, address=user_bo.address)
