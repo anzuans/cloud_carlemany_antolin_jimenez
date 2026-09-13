@@ -136,7 +136,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    entrypoint: sh infra/init_db.sh
+    entrypoint: sh -c "aerich init -t app.database.TORTOISE_ORM && aerich init-db"
 
   test-cov:
     <<: *test

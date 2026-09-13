@@ -3,7 +3,7 @@
 from typing import Optional
 
 import aiohttp
-from fastapi import APIRouter, Body, Header, HTTPException
+from fastapi import APIRouter, Body, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.files.dependency_injection.domain.create_file_controller import (
@@ -58,6 +58,8 @@ class FileResponse(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
+    content_path: Optional[str] = None
+    original_filename: Optional[str] = None
     user_id: int
 
 
@@ -68,7 +70,14 @@ async def list_files(auth: str = Header()) -> list[FileResponse]:
     list_controller = ListFilesControllers.carlemany()
     files_bo = await list_controller(user_id=user_id)
     return [
-        FileResponse(id=f.id, title=f.title, description=f.description, user_id=f.user_id)
+        FileResponse(
+            id=f.id,
+            title=f.title,
+            description=f.description,
+            content_path=f.content_path,
+            original_filename=f.original_filename,
+            user_id=f.user_id,
+        )
         for f in files_bo
     ]
 
@@ -111,7 +120,8 @@ class GetFileResponse(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
-    content: Optional[str] = None
+    content_path: Optional[str] = None
+    original_filename: Optional[str] = None
     user_id: int
 
 
@@ -131,7 +141,8 @@ async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
         id=file_bo.id,
         title=file_bo.title,
         description=file_bo.description,
-        content=file_bo.content,
+        content_path=file_bo.content_path,
+        original_filename=file_bo.original_filename,
         user_id=file_bo.user_id,
     )
 
@@ -139,21 +150,17 @@ async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
 # ============================================================================
 # POST /files/{file_id} - Upload file content
 # ============================================================================
-class UpdateFileContentRequest(BaseModel):
-    """Request model for updating file content."""
-
-    content: str
-
-
 @router.post("/{file_id}")
 async def update_file_content(
-    file_id: int, auth: str = Header(), body: UpdateFileContentRequest = Body()
+    file_id: int,
+    auth: str = Header(),
+    content: UploadFile = File(...),
 ) -> dict[str, str]:
     """Upload/update content for a specific file."""
     user_id = await get_user_from_token(auth)
     update_controller = UpdateFileContentControllers.carlemany()
     try:
-        await update_controller(file_id=file_id, user_id=user_id, content=body.content)
+        await update_controller(file_id=file_id, user_id=user_id, upload_file=content)
     except FileNotFoundException:
         raise HTTPException(status_code=404, detail="File not found") from None
     except UnauthorizedFileAccessException:

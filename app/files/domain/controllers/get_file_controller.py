@@ -1,8 +1,4 @@
 from app.files.domain.bos.file_bo import FileBO
-from app.files.domain.exceptions.FileNotFoundException import FileNotFoundException
-from app.files.domain.exceptions.UnauthorizedFileAccessException import (
-    UnauthorizedFileAccessException,
-)
 from app.files.domain.interface.file_persistence_interface import FilePersistenceInterface
 
 

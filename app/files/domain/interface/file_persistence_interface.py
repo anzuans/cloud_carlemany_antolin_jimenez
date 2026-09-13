@@ -4,29 +4,35 @@ from app.files.domain.bos.file_bo import FileBO
 
 
 class FilePersistenceInterface(ABC):
-    """Interface for file persistence operations."""
+    """Interface for file metadata persistence operations."""
 
     @abstractmethod
     async def store_file(self, file_bo: FileBO) -> FileBO:
-        """Store a file in the database."""
+        """Store file metadata in the database."""
         pass
 
     @abstractmethod
     async def get_file(self, file_id: int, user_id: int) -> FileBO:
-        """Get a file by ID, verifying ownership."""
+        """Get file metadata by ID, verifying ownership."""
         pass
 
     @abstractmethod
     async def get_files_by_user(self, user_id: int) -> list[FileBO]:
-        """Get all files owned by a user."""
+        """Get all file metadata records owned by a user."""
         pass
 
     @abstractmethod
-    async def update_file_content(self, file_id: int, user_id: int, content: str) -> FileBO:
-        """Update file content, verifying ownership."""
+    async def update_file_content_info(
+        self,
+        file_id: int,
+        user_id: int,
+        content_path: str,
+        original_filename: str,
+    ) -> FileBO:
+        """Update metadata that points to file content stored on disk."""
         pass
 
     @abstractmethod
     async def delete_file(self, file_id: int, user_id: int) -> None:
-        """Delete a file, verifying ownership."""
+        """Delete file metadata, verifying ownership."""
         pass

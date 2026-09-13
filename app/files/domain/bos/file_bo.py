@@ -9,5 +9,6 @@ class FileBO(BaseModel):
     id: Optional[int] = None
     title: str
     description: Optional[str] = None
-    content: Optional[str] = None
+    content_path: Optional[str] = None
+    original_filename: Optional[str] = None
     user_id: int

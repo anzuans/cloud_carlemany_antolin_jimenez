@@ -13,7 +13,6 @@ class CreateFileController:
         file_bo = FileBO(
             title=title,
             description=description,
-            content="",
             user_id=user_id,
         )
         return await self.file_persistence.store_file(file_bo)
