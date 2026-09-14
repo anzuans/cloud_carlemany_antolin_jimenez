@@ -48,9 +48,8 @@ async def get_user_from_token(token: str) -> int:
                 raise HTTPException(status_code=403, detail="Forbidden")
             return data["user_id"]
 
-
 # ============================================================================
-# GET /files - List all files for the authenticated user
+# Pydantic Models
 # ============================================================================
 class FileResponse(BaseModel):
     """Response model for file."""
@@ -62,8 +61,48 @@ class FileResponse(BaseModel):
     original_filename: Optional[str] = None
     user_id: int
 
+class CreateFileRequest(BaseModel):
+    """Request model for creating a file."""
 
-@router.get("")
+    title: str
+    description: Optional[str] = None
+
+
+class CreateFileResponse(BaseModel):
+    """Response model for creating a file."""
+
+    id: int
+
+class GetFileResponse(BaseModel):
+    """Response model for getting a file."""
+
+    id: int
+    title: str
+    description: Optional[str] = None
+    content_path: Optional[str] = None
+    original_filename: Optional[str] = None
+    user_id: int
+
+class MergeFilesRequest(BaseModel):
+    """Request model for merging files."""
+
+    file_ids: list[int]
+
+
+class MergeFilesResponse(BaseModel):
+    """Response model for merging files."""
+
+    id: int
+
+class StatusResponse(BaseModel):
+
+    status: str
+
+# ============================================================================
+# GET /files - List all files for the authenticated user
+# ============================================================================
+
+@router.get("", response_model=list[FileResponse])
 async def list_files(auth: str = Header()) -> list[FileResponse]:
     """List all files owned by the authenticated user."""
     user_id = await get_user_from_token(auth)
@@ -85,20 +124,8 @@ async def list_files(auth: str = Header()) -> list[FileResponse]:
 # ============================================================================
 # POST /files - Create a new file (metadata only)
 # ============================================================================
-class CreateFileRequest(BaseModel):
-    """Request model for creating a file."""
 
-    title: str
-    description: Optional[str] = None
-
-
-class CreateFileResponse(BaseModel):
-    """Response model for creating a file."""
-
-    id: int
-
-
-@router.post("")
+@router.post("", response_model=CreateFileResponse)
 async def create_file(auth: str = Header(), body: CreateFileRequest = Body()) -> CreateFileResponse:
     """Create a new file (metadata only)."""
     user_id = await get_user_from_token(auth)
@@ -114,18 +141,8 @@ async def create_file(auth: str = Header(), body: CreateFileRequest = Body()) ->
 # ============================================================================
 # GET /files/{file_id} - Get file by ID
 # ============================================================================
-class GetFileResponse(BaseModel):
-    """Response model for getting a file."""
 
-    id: int
-    title: str
-    description: Optional[str] = None
-    content_path: Optional[str] = None
-    original_filename: Optional[str] = None
-    user_id: int
-
-
-@router.get("/{file_id}")
+@router.get("/{file_id}", response_model=GetFileResponse)
 async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
     """Get a specific file by ID."""
     user_id = await get_user_from_token(auth)
@@ -150,12 +167,12 @@ async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
 # ============================================================================
 # POST /files/{file_id} - Upload file content
 # ============================================================================
-@router.post("/{file_id}")
+@router.post("/{file_id}", response_model=StatusResponse)
 async def update_file_content(
     file_id: int,
     auth: str = Header(),
     content: UploadFile = File(...),
-) -> dict[str, str]:
+) -> StatusResponse:
     """Upload/update content for a specific file."""
     user_id = await get_user_from_token(auth)
     update_controller = UpdateFileContentControllers.carlemany()
@@ -166,14 +183,14 @@ async def update_file_content(
     except UnauthorizedFileAccessException:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 
-    return {"status": "ok"}
+    return StatusResponse(status="ok")
 
 
 # ============================================================================
 # DELETE /files/{file_id} - Delete a file
 # ============================================================================
-@router.delete("/{file_id}")
-async def delete_file(file_id: int, auth: str = Header()) -> dict[str, str]:
+@router.delete("/{file_id}", response_model=StatusResponse)
+async def delete_file(file_id: int, auth: str = Header()) -> StatusResponse:
     """Delete a specific file."""
     user_id = await get_user_from_token(auth)
     delete_controller = DeleteFileControllers.carlemany()
@@ -184,25 +201,14 @@ async def delete_file(file_id: int, auth: str = Header()) -> dict[str, str]:
     except UnauthorizedFileAccessException:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 
-    return {"status": "ok"}
+    return StatusResponse(status="ok")
 
 
 # ============================================================================
 # POST /files/merge - Merge multiple PDF files
 # ============================================================================
-class MergeFilesRequest(BaseModel):
-    """Request model for merging files."""
 
-    file_ids: list[int]
-
-
-class MergeFilesResponse(BaseModel):
-    """Response model for merging files."""
-
-    id: int
-
-
-@router.post("/merge")
+@router.post("/merge", response_model=MergeFilesResponse)
 async def merge_files(auth: str = Header(), body: MergeFilesRequest = Body()) -> MergeFilesResponse:
     """Merge multiple PDF files."""
     user_id = await get_user_from_token(auth)
