@@ -165,6 +165,25 @@ async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
 
 
 # ============================================================================
+# POST /files/merge - Merge multiple PDF files
+# ============================================================================
+
+@router.post("/merge", response_model=MergeFilesResponse)
+async def merge_files(auth: str = Header(), body: MergeFilesRequest = Body()) -> MergeFilesResponse:
+    """Merge multiple PDF files."""
+    user_id = await get_user_from_token(auth)
+    merge_controller = MergeFilesControllers.carlemany()
+    try:
+        merged_file_id = await merge_controller(file_ids=body.file_ids, user_id=user_id)
+    except FileNotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e)) from None
+    except UnauthorizedFileAccessException:
+        raise HTTPException(status_code=403, detail="Forbidden") from None
+
+    return MergeFilesResponse(id=merged_file_id)
+
+
+# ============================================================================
 # POST /files/{file_id} - Upload file content
 # ============================================================================
 @router.post("/{file_id}", response_model=StatusResponse)
@@ -202,22 +221,3 @@ async def delete_file(file_id: int, auth: str = Header()) -> StatusResponse:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 
     return StatusResponse(status="ok")
-
-
-# ============================================================================
-# POST /files/merge - Merge multiple PDF files
-# ============================================================================
-
-@router.post("/merge", response_model=MergeFilesResponse)
-async def merge_files(auth: str = Header(), body: MergeFilesRequest = Body()) -> MergeFilesResponse:
-    """Merge multiple PDF files."""
-    user_id = await get_user_from_token(auth)
-    merge_controller = MergeFilesControllers.carlemany()
-    try:
-        merged_file_id = await merge_controller(file_ids=body.file_ids, user_id=user_id)
-    except FileNotFoundException as e:
-        raise HTTPException(status_code=404, detail=str(e)) from None
-    except UnauthorizedFileAccessException:
-        raise HTTPException(status_code=403, detail="Forbidden") from None
-
-    return MergeFilesResponse(id=merged_file_id)

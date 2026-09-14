@@ -84,7 +84,10 @@ def test_authentication_workflow() -> None:
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
     assert introspect_response.status_code == 200
-    assert introspect_response.json() == {"email": email, "address": registration["address"]}
+    introspection = introspect_response.json()
+    assert introspection["user_id"]
+    assert introspection["email"] == email
+    assert introspection["address"] == registration["address"]
 
     logout_response = requests.post(
         f"{BASE_URL}/authentication/logout",
