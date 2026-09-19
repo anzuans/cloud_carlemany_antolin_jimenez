@@ -20,6 +20,34 @@ services:
       postgres:
         condition: service_healthy
       - redis
+      - minio-server
+
+  minio-server:
+    image: <a href="http://quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z" target="_blank" rel="noopener noreferrer" aria-label="quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z">quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z</a>
+    command: minio server /data --console-address ":9090"
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    env_file:
+      .env
+    restart: always
+    networks:
+      - carlemany-net
+
+#  minio:
+#    image: minio/mc
+#    depends_on:
+#      - minio-server
+#    entrypoint: >
+#      /bin/sh -c "
+#      /usr/bin/mc alias set myminio <a href="http://minio-server:9000" target="_blank" rel="noopener noreferrer" aria-label="minio-server:9000">minio-server:9000</a> minio minio123;
+#      /usr/bin/mc mb myminio/backend-carlemany-s3-bucket;
+#      /usr/bin/mc anonymous set download myminio/backend-carlemany-s3-bucket;
+#      /usr/bin/mc policy set public myminio/backend-carlemany-s3-bucket;
+#      exit 0;
+#      "
+#    networks:
+#      - carlemany-net
 
   black:
     build:

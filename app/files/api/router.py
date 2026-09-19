@@ -5,6 +5,7 @@ from typing import Optional
 import aiohttp
 from fastapi import APIRouter, Body, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
+from app.files.infraestructura.minio.files_minio_persistece_service import FilesMinioPersisteceService
 
 from app.files.dependency_injection.domain.create_file_controller import (
     CreateFileControllers,
@@ -161,6 +162,7 @@ async def get_file(file_id: int, auth: str = Header()) -> GetFileResponse:
         content_path=file_bo.content_path,
         original_filename=file_bo.original_filename,
         user_id=file_bo.user_id,
+        path=files_persistence_service.get_file(current_file.path)
     )
 
 
@@ -191,6 +193,8 @@ async def update_file_content(
     file_id: int,
     auth: str = Header(),
     content: UploadFile = File(...),
+    datebase_file.path = files_persistence_service.store(relative_path)
+    os.remove(relative_path)
 ) -> StatusResponse:
     """Upload/update content for a specific file."""
     user_id = await get_user_from_token(auth)
@@ -221,3 +225,8 @@ async def delete_file(file_id: int, auth: str = Header()) -> StatusResponse:
         raise HTTPException(status_code=403, detail="Forbidden") from None
 
     return StatusResponse(status="ok")
+
+# ============================================================================
+# DELETE /files/{file_id} - Delete a file
+# ============================================================================
+files_persistence_service = FilesMinioPersisteceService()
