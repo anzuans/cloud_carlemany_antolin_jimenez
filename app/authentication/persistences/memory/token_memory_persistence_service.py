@@ -5,6 +5,8 @@ from app.authentication.domain.interface.token_persistence_interface import (
     TokenPersistenceInterface,
 )
 
+from app.authentication.domain.exceptions.token_does_not_exists_exception import TokenDoesNotExistsException
+
 
 class TokenMemoryPersistenceService(TokenPersistenceInterface, ABC):
     def __init__(self):
@@ -13,8 +15,10 @@ class TokenMemoryPersistenceService(TokenPersistenceInterface, ABC):
     def store_token(self, token: str, email: str) -> None:
         self.token_db[token] = email
 
-    def get_email(self, token: str) -> Optional[str]:
-        return self.token_db.get(token)
+    def get_email(self, token: str):
+        if token not in self.token_persistence:
+            raise TokenDoesNotExistsException
+        return self.token_persistence[token]
 
     def delete_token(self, token: str) -> bool:
         if token not in self.token_db:

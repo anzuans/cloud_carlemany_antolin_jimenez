@@ -1,0 +1,2 @@
+class TokenDoesNotExistsException(Exception):
+    pass

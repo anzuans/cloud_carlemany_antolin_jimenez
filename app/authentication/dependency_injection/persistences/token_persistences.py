@@ -8,4 +8,6 @@ from app.authentication.persistences.memory.token_memory_persistence_service imp
 class TokenPersistences(containers.DeclarativeContainer):
     memory = providers.Singleton(TokenMemoryPersistenceService)
 
-    carlemany = memory
+    redis = providers.Singleton(TokenRedisPersistenceService)
+
+    carlemany = redis

@@ -10,6 +10,8 @@ services:
       - type: bind
         source: .
         target: /carlemany-backend
+    env_file:
+      - .env
     ports:
       - "8000:80"
     networks:
@@ -17,6 +19,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      - redis
 
   black:
     build:
@@ -64,6 +67,19 @@ services:
       carlemany-backend:
         condition: service_started
     entrypoint: pytest --maxfail=10
+
+  redis:
+    image: redis:7.2.4
+    hostname: redis-cache
+    container_name: redis-cache
+    restart: on-failure
+    command: redis-server
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "6379:6379"
+    networks:
+      - carlemany-net
 
   postgres:
     image: postgres:13.4-alpine3.14

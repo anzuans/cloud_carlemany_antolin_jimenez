@@ -8,6 +8,10 @@ class TokenPersistenceInterface(ABC):
         pass
 
     @abstractmethod
+    def generate_token(self, email: str) -> str:
+        pass
+
+    @abstractmethod
     def get_email(self, token: str) -> Optional[str]:
         pass
 
