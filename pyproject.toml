@@ -1,3 +1,35 @@
+<<<<<<< HEAD
+=======
+[project]
+name = "cloud-computing"
+version = "0.1.0"
+description = "Cloud Computing course backend service"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aerich==0.6.3",
+    "aiohttp==3.11.13",
+    "asyncpg==0.28.0",
+    "dependency-injector",
+    "fastapi",
+    "pydantic",
+    "pydantic_settings==2.0.0",
+    "pypdf==4.2.0",
+    "python-multipart==0.0.9",
+    "requests==2.32.3",
+    "tortoise>=0.1.1",
+    "tortoise-orm==0.19.3",
+]
+
+[dependency-groups]
+dev = [
+    "black==24.1.0",
+    "pytest",
+    "pytest-cov",
+    "ruff==0.1.14",
+]
+
+>>>>>>> activity-4
 [tool.ruff]
 line-length = 100
 

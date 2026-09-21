@@ -1,23 +1,90 @@
+<<<<<<< HEAD
 version: "3.7"
 
+=======
+>>>>>>> activity-4
 services:
   carlemany-backend:
     build:
       context: .
+<<<<<<< HEAD
       target: carlemany-backend-dev
     image: carlemany-backend-dev
+=======
+      target: carlemany-backend-base
+    image: carlemany-backend-base
+>>>>>>> activity-4
     env_file:
       - .env
     volumes:
       - type: bind
         source: .
         target: /carlemany-backend
+<<<<<<< HEAD
+=======
+    env_file:
+      - .env
+>>>>>>> activity-4
     ports:
       - "8000:80"
     networks:
       - carlemany-net
+<<<<<<< HEAD
 
   black:
+=======
+    depends_on:
+      postgres:
+        condition: service_healthy
+      - redis
+      - minio-server
+
+  minio-server:
+    image: <a href="http://quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z" target="_blank" rel="noopener noreferrer" aria-label="quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z">quay.io/minio/minio:RELEASE.2023-11-01T01-57-10Z</a>
+    command: minio server /data --console-address ":9090"
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    env_file:
+      .env
+    restart: always
+    networks:
+      - carlemany-net
+
+#  minio:
+#    image: minio/mc
+#    depends_on:
+#      - minio-server
+#    entrypoint: >
+#      /bin/sh -c "
+#      /usr/bin/mc alias set myminio <a href="http://minio-server:9000" target="_blank" rel="noopener noreferrer" aria-label="minio-server:9000">minio-server:9000</a> minio minio123;
+#      /usr/bin/mc mb myminio/backend-carlemany-s3-bucket;
+#      /usr/bin/mc anonymous set download myminio/backend-carlemany-s3-bucket;
+#      /usr/bin/mc policy set public myminio/backend-carlemany-s3-bucket;
+#      exit 0;
+#      "
+#    networks:
+#      - carlemany-net
+
+  black:
+    build:
+      context: .
+      target: carlemany-backend-dev
+    image: carlemany-backend-dev:latest
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: ./
+        target: /carlemany-backend
+        read_only: true
+    entrypoint: sh -c "black --config .black --check --diff ."
+
+  format:
+    build:
+      context: .
+      target: carlemany-backend-dev
+>>>>>>> activity-4
     image: carlemany-backend-dev:latest
     env_file:
       - .env
@@ -28,21 +95,133 @@ services:
     entrypoint: sh -c "black --config .black . && ruff check --fix"
 
   test: &test
+<<<<<<< HEAD
     image: carlemany-backend-dev:latest
     env_file:
       - .env
+=======
+    build:
+      context: .
+      target: carlemany-backend-dev
+    image: carlemany-backend-dev:latest
+    env_file:
+      - .env
+    environment:
+      E2E_BASE_URL: http://carlemany-backend
+>>>>>>> activity-4
     volumes:
       - type: bind
         source: ./
         target: /carlemany-backend
     networks:
       - carlemany-net
+<<<<<<< HEAD
     entrypoint: pytest --maxfail=10
 
+=======
+    depends_on:
+      carlemany-backend:
+        condition: service_started
+    entrypoint: pytest --maxfail=10
+
+  redis:
+    image: redis:7.2.4
+    hostname: redis-cache
+    container_name: redis-cache
+    restart: on-failure
+    command: redis-server
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "6379:6379"
+    networks:
+      - carlemany-net
+
+  postgres:
+    image: postgres:13.4-alpine3.14
+    environment:
+      POSTGRES_DB: ${PSQL_DB_DATABASE}
+      POSTGRES_PASSWORD: ${PSQL_DB_PASSWORD}
+      POSTGRES_USER: ${PSQL_DB_USERNAME}
+    env_file:
+      - .env
+    volumes:
+      - type: volume
+        source: carlemany-backend-data
+        target: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - carlemany-net
+
+  make_migrations:
+    build:
+      context: .
+      target: carlemany-backend-base
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: .
+        target: /carlemany-backend
+    networks:
+      - carlemany-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: aerich migrate
+
+  migrate:
+    build:
+      context: .
+      target: carlemany-backend-base
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: .
+        target: /carlemany-backend
+    networks:
+      - carlemany-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: aerich upgrade
+
+  init_db:
+    build:
+      context: .
+      target: carlemany-backend-base
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: .
+        target: /carlemany-backend
+    networks:
+      - carlemany-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: sh -c "aerich init -t app.database.TORTOISE_ORM && aerich init-db"
+
+>>>>>>> activity-4
   test-cov:
     <<: *test
     entrypoint: pytest --maxfail=10 --cov --cov-report=term --cov-report=html --junitxml=tests/test-results/junit.xml
 
 
 networks:
+<<<<<<< HEAD
   carlemany-net:
+=======
+  carlemany-net:
+
+volumes:
+  carlemany-backend-data:
+>>>>>>> activity-4
