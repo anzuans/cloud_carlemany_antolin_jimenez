@@ -5,24 +5,24 @@ import uuid
 class FilesMinioPersisteceService:
     def __init__(self):
         self._minio_client = Minio(
-            f"{minio_config.host}:{minio_config.port}", # "minio-server:9000"
+            f"{minio_config.host}:{minio_config.port}",
             access_key=minio_config.root_user,
             secret_key=minio_config.root_password,
-            secure=False
+            secure=False,
         )
-        self.backet_name = minio_config.bucket_name
+        self.bucket_name = minio_config.bucket_name
 
-    def put_file(self, path :{port}):
-        remote_identifier = str(uuid.uuid4()) + ".pdf"
-        self.minio_client.fput_object(
-            self.backet_name,
+    def put_file(self, path: str) -> str:
+        remote_identifier = f"{uuid.uuid4()}.pdf"
+        self._minio_client.fput_object(
+            self.bucket_name,
             object_name=remote_identifier,
-            file_path=path
+            file_path=path,
         )
         return remote_identifier
 
-    def get_file(self, remote_identifier):
-        return self.minio_client.presigned_get_object(
-            bucked_name=minio_config.bucket_name,
-            object_name=remote_identifier
+    def get_file(self, remote_identifier: str) -> str:
+        return self._minio_client.presigned_get_object(
+            bucket_name=self.bucket_name,
+            object_name=remote_identifier,
         )

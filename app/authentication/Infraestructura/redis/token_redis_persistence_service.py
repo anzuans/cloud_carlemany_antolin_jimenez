@@ -6,24 +6,29 @@ from redis import Redis
 from app.authentication.domain.exceptions.token_does_not_exists_exception import TokenDoesNotExistsException
 from app.config import redis_config
 
-class TokenRedisPersistenceInterface(TokenPersistenceInterface):
+class TokenRedisPersistenceService(TokenPersistenceInterface):
 
     def __init__(self):
-        self._redis_client = Redis(
+        self._redis = redis.Redis(
             host=redis_config.host,
             port=redis_config.port,
-            decode_responses=True
+            db=redis_config.db,
+            password=redis_config.password,
+            decode_responses=True,
         )
 
-    def generate_token(self, email: str) -> str:
-        current_token = str(uuid.uuid4())
-        self._redis_client.set(current_token, email)
-        return current_token
+    async def store_token(self, token: str, email: str, ttl: Optional[int] = 3600) -> None:
+        """Almacena un token asociándolo al email del usuario con un TTL opcional."""
+        if ttl:
+            await self._redis.setex(name=token, time=ttl, value=email)
+        else:
+            await self._redis.set(name=token, value=email)
 
-    def get_email(self, token: str) -> str:
-        if not self._redis_client.exists(token):
-            raise TokenDoesNotExistsException()
-        return self._redis_client.get(token)
+    async def get_email(self, token: str) -> Optional[str]:
+        """Recupera el email del usuario asociado al token especificado."""
+        return await self._redis.get(token)
 
-    def delete_token(self, token: str):
-        self._redis_client.delete(token)
+    async def delete_token(self, token: str) -> bool:
+        """Elimina el token de la base de datos de Redis."""
+        deleted_count = await self._redis.delete(token)
+        return deleted_count > 0
