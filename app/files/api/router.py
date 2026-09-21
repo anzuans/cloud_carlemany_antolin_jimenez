@@ -32,12 +32,10 @@ from app.files.domain.exceptions.UnauthorizedFileAccessException import (
 
 router = APIRouter(prefix="/files", tags=["files"])
 
-
 # ============================================================================
 # Helper function to get user_id from authentication service
 # ============================================================================
 async def get_user_from_token(token: str) -> int:
-    """Verify token and get user_id from authentication service."""
     url = "http://localhost:80/authentication/introspect"
     headers = {"auth": token, "content-type": "application/json"}
     async with aiohttp.ClientSession() as session:
@@ -53,8 +51,6 @@ async def get_user_from_token(token: str) -> int:
 # Pydantic Models
 # ============================================================================
 class FileResponse(BaseModel):
-    """Response model for file."""
-
     id: int
     title: str
     description: Optional[str] = None
@@ -63,20 +59,13 @@ class FileResponse(BaseModel):
     user_id: int
 
 class CreateFileRequest(BaseModel):
-    """Request model for creating a file."""
-
     title: str
     description: Optional[str] = None
 
-
 class CreateFileResponse(BaseModel):
-    """Response model for creating a file."""
-
     id: int
 
 class GetFileResponse(BaseModel):
-    """Response model for getting a file."""
-
     id: int
     title: str
     description: Optional[str] = None
